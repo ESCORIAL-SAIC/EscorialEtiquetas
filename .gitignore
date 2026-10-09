@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+.idea/
+*.user
+TestResults/
+publish/
+# Credenciales locales: nunca al repo
+secrets.local.xml
+settings.json
