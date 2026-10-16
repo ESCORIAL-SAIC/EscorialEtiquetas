@@ -24,6 +24,15 @@ dotnet publish src/EscorialEtiquetas.App -c Release -r linux-x64 --self-containe
 
 Los tests de UI dejan capturas en `tests/EscorialEtiquetas.App.Tests/bin/Debug/net10.0/capturas/`.
 
+## Releases
+
+Todo cambio entra por PR a `dev`; `main` recibe solo PRs desde `dev`.
+
+- Cada PR corre los tests (`test`, más un check por test) y compila los binarios (`Compilar binarios`) con la versión definitiva. Los dos checks son obligatorios.
+- Al mergear se publica en Releases el mismo zip (win-x64) y tar.gz (linux-x64) compilados en la PR, sin recompilar.
+- Versión: etiqueta de la PR `bugfix` (default), `feature` o `breaking`. Los merges a `dev` publican pre-releases `X.Y.Z-rc.N`; la PR `dev` → `main` publica la estable `X.Y.Z`.
+- La versión no está en el código: sale de los tags (`git tag`). Las PRs a `dev` tienen que estar al día con `dev`.
+
 ## Configuración
 
 **Credenciales:** `secrets.local.xml`, con el mismo formato que la app anterior y nunca versionado. Se busca en este orden:
