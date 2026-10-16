@@ -101,7 +101,7 @@ jobs:
           [ "$(campo base_ref)" = "$BASE_REF" ] || { echo "❌ El artefacto se compiló para otra rama destino"; exit 1; }
           [ "$(campo tipo)" = "$tipo" ] || { echo "❌ Las etiquetas de la PR cambiaron después de compilar ($(campo tipo) -> $tipo)"; exit 1; }
           # La rama destino justo antes del merge tiene que ser la misma contra la que se
-          # compiló (funciona con merge commit o squash; no con rebase merge).
+          # compiló. El repo solo permite merge commit (lo exige el changelog de la estable).
           base_previa=$(git rev-parse "$MERGE_SHA^1")
           [ "$(campo base_sha)" = "$base_previa" ] || {
             echo "❌ $BASE_REF cambió entre la compilación ($(campo base_sha)) y el merge ($base_previa)"; exit 1; }
