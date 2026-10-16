@@ -1,0 +1,112 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:EscorialEtiquetas.App.ViewModels"
+        x:Class="EscorialEtiquetas.App.Views.ConfigWindow"
+        x:DataType="vm:ConfigViewModel"
+        Title="{Binding Titulo}"
+        Icon="/Assets/favicon.ico"
+        Width="760" Height="680"
+        WindowStartupLocation="CenterOwner">
+
+  <Window.Styles>
+    <Style Selector="TextBlock.etiqueta">
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ComboBox, AutoCompleteBox, NumericUpDown">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="*,Auto" Margin="20">
+    <ScrollViewer Grid.Row="0">
+      <StackPanel Spacing="18">
+
+        <!-- General -->
+        <Grid ColumnDefinitions="180,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+              RowSpacing="10" ColumnSpacing="10">
+          <TextBlock Grid.Row="0" Classes="etiqueta" Text="Impresora" />
+          <AutoCompleteBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Name="TxtImpresora"
+                           ItemsSource="{Binding Impresoras}" Text="{Binding Impresora}" FilterMode="Contains"
+                           Watermark="Cola del sistema o tcp://IP:9100" />
+
+          <TextBlock Grid.Row="1" Classes="etiqueta" Text="Tipo" />
+          <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Tipos}" SelectedItem="{Binding Tipo}" />
+          <TextBlock Grid.Row="1" Grid.Column="2" Classes="etiqueta" Foreground="Gray" Text="{Binding IpBaseDatos}" />
+
+          <TextBlock Grid.Row="2" Classes="etiqueta" Text="Línea de producción" />
+          <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Lineas}" SelectedItem="{Binding Linea}" />
+
+          <TextBlock Grid.Row="3" Classes="etiqueta" Text="Usuario (Manual)" />
+          <ComboBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding Usuarios}" SelectedItem="{Binding UsuarioManual}"
+                    IsEnabled="{Binding UsuarioManualEditable}" />
+
+          <TextBlock Grid.Row="4" Classes="etiqueta" Text="Contraseña" />
+          <TextBox Grid.Row="4" Grid.Column="1" PasswordChar="•" Text="{Binding PasswordManual}"
+                   IsEnabled="{Binding UsuarioManualEditable}" />
+          <Button Grid.Row="4" Grid.Column="2" Content="OK" Command="{Binding VerificarUsuarioCommand}"
+                  IsEnabled="{Binding UsuarioManualEditable}" />
+
+          <CheckBox Grid.Row="5" Grid.Column="1" Content="Testing (imprime sin guardar)" IsChecked="{Binding Testing}" />
+          <CheckBox Grid.Row="6" Grid.Column="1" Content="Imprimir aviso al cambiar de modelo" Name="ChkAdvertencia"
+                    IsChecked="{Binding ImprimeAdvertencia}" />
+        </Grid>
+
+        <!-- Avanzadas -->
+        <Expander Header="Avanzadas" HorizontalAlignment="Stretch">
+          <StackPanel Spacing="12">
+            <Button Content="Desbloquear (clave de administrador)" Command="{Binding AvanzadasCommand}"
+                    IsVisible="{Binding !AvanzadasHabilitadas}" />
+
+            <CheckBox Content="Usar login (se aplica al reiniciar la aplicación)" Name="ChkUsaLogin"
+                      IsChecked="{Binding UsaLogin}" IsEnabled="{Binding AvanzadasHabilitadas}" />
+
+            <Grid ColumnDefinitions="180,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
+                  RowSpacing="10" ColumnSpacing="10" IsEnabled="{Binding AvanzadasHabilitadas}">
+              <TextBlock Grid.Row="0" Classes="etiqueta" Text="Variable fecha" />
+              <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding VarFecha}" />
+              <TextBlock Grid.Row="1" Classes="etiqueta" Text="Variable número serie" />
+              <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding VarSerie}" />
+              <TextBlock Grid.Row="2" Classes="etiqueta" Text="Caption" />
+              <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding Caption}" />
+              <TextBlock Grid.Row="3" Classes="etiqueta" Text="Puerto Arduino" />
+              <AutoCompleteBox Grid.Row="3" Grid.Column="1" ItemsSource="{Binding PuertosSerie}" Text="{Binding ArduinoPort}"
+                               Watermark="COM3 / /dev/ttyUSB0" />
+              <TextBlock Grid.Row="4" Classes="etiqueta" Text="Baud rate" />
+              <NumericUpDown Grid.Row="4" Grid.Column="1" Value="{Binding ArduinoBaudRate}" Minimum="300" Maximum="1000000" FormatString="0" />
+              <TextBlock Grid.Row="5" Classes="etiqueta" Text="Comando medir distancia" />
+              <TextBox Grid.Row="5" Grid.Column="1" Text="{Binding MedirDistancia}" />
+              <TextBlock Grid.Row="6" Classes="etiqueta" Text="Distancia máxima (cm)" />
+              <NumericUpDown Grid.Row="6" Grid.Column="1" Value="{Binding DistanciaMaximaCm}" Minimum="1" Maximum="1000" FormatString="0" />
+              <TextBlock Grid.Row="7" Classes="etiqueta" Text="Mapeo de rutas (Linux)" VerticalAlignment="Top" Margin="0,6,0,0" />
+              <TextBox Grid.Row="7" Grid.Column="1" Text="{Binding MapeoRutas}" AcceptsReturn="True" Height="70"
+                       Watermark="\\servidor\etiquetas=/mnt/etiquetas" />
+            </Grid>
+
+            <Grid ColumnDefinitions="180,*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto"
+                  RowSpacing="8" ColumnSpacing="10" IsEnabled="{Binding AvanzadasHabilitadas}">
+              <TextBlock Grid.Column="1" Text="LED ON" FontWeight="SemiBold" />
+              <TextBlock Grid.Column="2" Text="LED OFF" FontWeight="SemiBold" />
+              <TextBlock Grid.Row="1" Classes="etiqueta" Text="Amarillo" />
+              <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding LedAmarilloOn}" />
+              <TextBox Grid.Row="1" Grid.Column="2" Text="{Binding LedAmarilloOff}" />
+              <TextBlock Grid.Row="2" Classes="etiqueta" Text="Azul" />
+              <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding LedAzulOn}" />
+              <TextBox Grid.Row="2" Grid.Column="2" Text="{Binding LedAzulOff}" />
+              <TextBlock Grid.Row="3" Classes="etiqueta" Text="Verde" />
+              <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding LedVerdeOn}" />
+              <TextBox Grid.Row="3" Grid.Column="2" Text="{Binding LedVerdeOff}" />
+              <TextBlock Grid.Row="4" Classes="etiqueta" Text="Rojo" />
+              <TextBox Grid.Row="4" Grid.Column="1" Text="{Binding LedRojoOn}" />
+              <TextBox Grid.Row="4" Grid.Column="2" Text="{Binding LedRojoOff}" />
+            </Grid>
+
+            <Button Content="Imágenes" Command="{Binding ImagenesCommand}" IsEnabled="{Binding AvanzadasHabilitadas}" />
+          </StackPanel>
+        </Expander>
+      </StackPanel>
+    </ScrollViewer>
+
+    <Button Grid.Row="1" Classes="primario" Content="Guardar" Height="44" Margin="0,16,0,0"
+            Command="{Binding GuardarCommand}" />
+  </Grid>
+</Window>

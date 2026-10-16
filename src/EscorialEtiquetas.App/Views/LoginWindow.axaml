@@ -1,0 +1,17 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:EscorialEtiquetas.App.ViewModels"
+        x:Class="EscorialEtiquetas.App.Views.LoginWindow"
+        x:DataType="vm:LoginViewModel"
+        Title="Inicio de Sesión"
+        Icon="/Assets/favicon.ico"
+        SizeToContent="WidthAndHeight" CanResize="False"
+        WindowStartupLocation="CenterScreen">
+  <StackPanel Margin="24" Spacing="10" Width="320">
+    <TextBlock Text="Usuario" />
+    <ComboBox ItemsSource="{Binding Usuarios}" SelectedItem="{Binding Usuario}" HorizontalAlignment="Stretch" />
+    <TextBlock Text="Contraseña" />
+    <TextBox PasswordChar="•" Text="{Binding Clave}" />
+    <Button Classes="primario" Content="Iniciar" IsDefault="True" Margin="0,8,0,0" Command="{Binding IngresarCommand}" />
+  </StackPanel>
+</Window>

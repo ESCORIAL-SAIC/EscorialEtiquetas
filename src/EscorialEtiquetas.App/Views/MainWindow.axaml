@@ -1,0 +1,73 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="using:EscorialEtiquetas.App.ViewModels"
+        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="720"
+        x:Class="EscorialEtiquetas.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="{Binding Titulo}"
+        Icon="/Assets/favicon.ico"
+        Width="1000" Height="720" MinWidth="800" MinHeight="600"
+        WindowStartupLocation="CenterScreen"
+        Background="White">
+
+  <Window.Styles>
+    <Style Selector="ComboBox.grande">
+      <Setter Property="FontSize" Value="24" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="TextBlock.dato">
+      <Setter Property="FontSize" Value="22" />
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*" Margin="16">
+
+    <Border Grid.Row="0" IsVisible="{Binding Estado, Converter={x:Static ObjectConverters.IsNotNull}}"
+            Background="#FDECEA" CornerRadius="4" Padding="10" Margin="0,0,0,12">
+      <TextBlock Text="{Binding Estado}" Foreground="Firebrick" TextWrapping="Wrap" />
+    </Border>
+
+    <Grid Grid.Row="1" ColumnDefinitions="*,16,360">
+
+      <!-- Impresión -->
+      <HeaderedContentControl Grid.Column="0" Header="Impresión" FontSize="18">
+        <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="12" Margin="0,8,0,0">
+          <ComboBox Grid.Row="0" Classes="grande" Name="CmbModelo"
+                    ItemsSource="{Binding Modelos}" SelectedItem="{Binding ModeloSeleccionado}" />
+          <ComboBox Grid.Row="1" Classes="grande" Name="CmbGas"
+                    ItemsSource="{Binding Gases}" SelectedItem="{Binding GasSeleccionado}" />
+          <ComboBox Grid.Row="2" Classes="grande" Name="CmbEquipamiento"
+                    ItemsSource="{Binding Equipamientos}" SelectedItem="{Binding EquipamientoSeleccionado}" />
+          <Border Grid.Row="3" BorderBrush="#DDD" BorderThickness="1" CornerRadius="4" Padding="4">
+            <Image Source="{Binding Imagen, Converter={StaticResource BytesToBitmap}}" Stretch="Uniform" />
+          </Border>
+        </Grid>
+      </HeaderedContentControl>
+
+      <!-- Panel derecho -->
+      <Grid Grid.Column="2" RowDefinitions="Auto,Auto,Auto,*,Auto" RowSpacing="12">
+        <TextBlock Grid.Row="0" Classes="dato" Name="LblCodigo" Text="{Binding CodigoProducto}" />
+        <TextBlock Grid.Row="1" Classes="dato" Name="LblSerie" Text="{Binding Serie}" />
+
+        <HeaderedContentControl Grid.Row="2" Header="Etiquetas Impresas" FontSize="18">
+          <StackPanel Spacing="6" Margin="0,8,0,0">
+            <TextBlock Classes="dato" Text="{Binding TextoImpresasHoy}" />
+            <TextBlock Classes="dato" Text="{Binding TextoImpresasUsuario}" />
+            <TextBlock Classes="dato" Text="{Binding TextoImpresasAyer}" />
+          </StackPanel>
+        </HeaderedContentControl>
+
+        <StackPanel Grid.Row="4" Spacing="10">
+          <Button Classes="primario" Name="BtnImprimir" Content="Impresión Manual" FontSize="22" Height="70"
+                  Command="{Binding ImprimirCommand}" />
+          <Button Classes="primario" Content="Impresión Auto." FontSize="18" Height="50" IsEnabled="False"
+                  ToolTip.Tip="Deshabilitado (requiere Arduino), igual que en la versión anterior" />
+          <Button Classes="primario" Name="BtnConfig" Content="Configuración" FontSize="18" Height="50"
+                  Command="{Binding ConfiguracionCommand}" />
+        </StackPanel>
+      </Grid>
+    </Grid>
+  </Grid>
+</Window>

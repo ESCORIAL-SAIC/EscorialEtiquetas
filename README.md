@@ -6,10 +6,10 @@ Se desarrolla, compila y testea en Linux; corre en Linux y Windows.
 ## Estructura
 
 ```
-src/Escorial.Etiquetas.Core/    Lógica, EF Core (SQL Server), impresión ZPL, Arduino, configuración
-src/Escorial.Etiquetas.App/     Interfaz Avalonia (MVVM con CommunityToolkit.Mvvm)
-tests/Escorial.Etiquetas.Core.Tests/  xUnit + SQLite en memoria
-tests/Escorial.Etiquetas.App.Tests/   ViewModels + UI headless (Avalonia.Headless)
+src/EscorialEtiquetas.Core/    Lógica, EF Core (SQL Server), impresión ZPL, Arduino, configuración
+src/EscorialEtiquetas.App/     Interfaz Avalonia (MVVM con CommunityToolkit.Mvvm)
+tests/EscorialEtiquetas.Core.Tests/  xUnit + SQLite en memoria
+tests/EscorialEtiquetas.App.Tests/   ViewModels + UI headless (Avalonia.Headless)
 ```
 
 ## Comandos
@@ -17,19 +17,19 @@ tests/Escorial.Etiquetas.App.Tests/   ViewModels + UI headless (Avalonia.Headles
 ```bash
 dotnet build
 dotnet test
-dotnet run --project src/Escorial.Etiquetas.App
-dotnet publish src/Escorial.Etiquetas.App -c Release -r win-x64 --self-contained -o publish/win-x64
-dotnet publish src/Escorial.Etiquetas.App -c Release -r linux-x64 --self-contained -o publish/linux-x64
+dotnet run --project src/EscorialEtiquetas.App
+dotnet publish src/EscorialEtiquetas.App -c Release -r win-x64 --self-contained -o publish/win-x64
+dotnet publish src/EscorialEtiquetas.App -c Release -r linux-x64 --self-contained -o publish/linux-x64
 ```
 
-Los tests de UI dejan capturas en `tests/Escorial.Etiquetas.App.Tests/bin/Debug/net10.0/capturas/`.
+Los tests de UI dejan capturas en `tests/EscorialEtiquetas.App.Tests/bin/Debug/net10.0/capturas/`.
 
 ## Configuración
 
 **Credenciales:** `secrets.local.xml`, con el mismo formato que la app anterior y nunca versionado. Se busca en este orden:
 
 1. La variable de entorno `ESCORIAL_SECRETS` (ruta completa al archivo).
-2. Junto al ejecutable. Si está en `src/Escorial.Etiquetas.App/`, se copia al compilar.
+2. Junto al ejecutable. Si está en `src/EscorialEtiquetas.App/`, se copia al compilar.
 3. `~/.config/EscorialEtiquetas/` (Linux) o `%APPDATA%\EscorialEtiquetas\` (Windows).
 4. Las carpetas superiores al ejecutable.
 

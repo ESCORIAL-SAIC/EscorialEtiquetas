@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/EscorialEtiquetas.App/EscorialEtiquetas.App.csproj" />
+    <Project Path="src/EscorialEtiquetas.Core/EscorialEtiquetas.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/EscorialEtiquetas.App.Tests/EscorialEtiquetas.App.Tests.csproj" />
+    <Project Path="tests/EscorialEtiquetas.Core.Tests/EscorialEtiquetas.Core.Tests.csproj" />
+  </Folder>
+</Solution>
