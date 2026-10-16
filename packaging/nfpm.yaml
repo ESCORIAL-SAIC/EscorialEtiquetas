@@ -1,0 +1,44 @@
+# Paquetes .deb y .rpm a partir de "dotnet publish -r linux-x64 --self-contained" en publish/linux-x64.
+# La versión llega por $VERSION (X.Y.Z o X.Y.Z-rc.N); nfpm la pasa a X.Y.Z~rc.N para que
+# apt/dnf ordenen el rc antes de la estable.
+name: escorialetiquetas
+arch: amd64
+platform: linux
+version: ${VERSION}
+version_schema: semver
+maintainer: Escorial SAIC <sistemas@escorial.com.ar>
+description: Impresión de etiquetas de producción (Escorial).
+homepage: https://github.com/ESCORIAL-SAIC/EscorialEtiquetas
+license: Propietaria
+
+contents:
+  - src: publish/linux-x64
+    dst: /opt/escorialetiquetas
+    type: tree
+  - src: /opt/escorialetiquetas/EscorialEtiquetas
+    dst: /usr/bin/escorialetiquetas
+    type: symlink
+  - src: packaging/escorialetiquetas.desktop
+    dst: /usr/share/applications/escorialetiquetas.desktop
+  - src: packaging/escorialetiquetas.png
+    dst: /usr/share/icons/hicolor/32x32/apps/escorialetiquetas.png
+
+# .NET self-contained necesita ICU y OpenSSL del sistema; Avalonia, X11 y fontconfig.
+overrides:
+  deb:
+    depends:
+      # ponytail: lista fija de versiones de ICU; agregar la nueva cuando salga otra distro.
+      - libicu78 | libicu77 | libicu76 | libicu74 | libicu72 | libicu70
+      - libssl3t64 | libssl3
+      - libfontconfig1
+      - libx11-6
+      - libice6
+      - libsm6
+  rpm:
+    depends:
+      - libicu
+      - openssl-libs
+      - fontconfig
+      - libX11
+      - libICE
+      - libSM
