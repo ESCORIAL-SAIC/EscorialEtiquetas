@@ -1,0 +1,15 @@
+# Categorías de las notas que genera publicar.yml (API generate-notes).
+changelog:
+  exclude:
+    authors:
+      - github-actions
+      - github-actions[bot]
+  categories:
+    - title: Cambios incompatibles
+      labels: [breaking]
+    - title: Novedades
+      labels: [feature]
+    - title: Correcciones
+      labels: [bugfix]
+    - title: Otros
+      labels: ["*"]

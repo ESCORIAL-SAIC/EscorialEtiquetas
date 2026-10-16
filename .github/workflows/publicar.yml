@@ -1,0 +1,206 @@
+name: Publicar
+
+# Al mergear una PR a dev (release candidate) o la PR dev -> main (estable), publica
+# el artefacto que ya compiló build-pr.yml para la cabeza de esa PR: no recompila.
+# Antes de publicar verifica que corresponda exactamente a lo mergeado.
+#
+# La versión no se commitea: queda en un tag anotado "versionCode=N" sobre el merge
+# commit (de ahí la lee el build siguiente). Así el CI no pushea a dev/main y no
+# necesita saltear los checks obligatorios del ruleset.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [dev, main]
+
+concurrency:
+  group: release-pipeline
+  cancel-in-progress: false
+
+permissions:
+  contents: write     # tag + release
+  pull-requests: read
+  actions: read       # descargar el artifact del run de build-pr.yml
+
+env:
+  # Los mismos valores que en build-pr.yml.
+  VERSION_INICIAL: "0.1.0"
+  VERSION_CODE_INICIAL: "0"
+
+jobs:
+  publicar:
+    name: Publicar
+    if: >-
+      github.event.pull_request.merged == true &&
+      (github.event.pull_request.base.ref == 'dev' || github.event.pull_request.head.ref == 'dev')
+    runs-on: ubuntu-latest
+
+    outputs:
+      destino: ${{ steps.verificar.outputs.destino }}
+      version: ${{ steps.verificar.outputs.version }}
+      versionCode: ${{ steps.verificar.outputs.versionCode }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          fetch-depth: 0
+
+      - name: Buscar el artefacto compilado en la PR
+        id: compilacion
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const headSha = context.payload.pull_request.head.sha;
+            // Por ruta y no con workflow_id: eso exige que el archivo ya esté en main.
+            const runs = (await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+              ...context.repo, head_sha: headSha, status: 'success', per_page: 100,
+            })).filter(r => r.path === '.github/workflows/build-pr.yml');
+            runs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            for (const run of runs) {
+              const { data } = await github.rest.actions.listWorkflowRunArtifacts({ ...context.repo, run_id: run.id });
+              const art = data.artifacts.find(a => a.name === 'artefacto-pr' && !a.expired);
+              if (art) {
+                core.info(`Artefacto encontrado en el run ${run.html_url}`);
+                core.setOutput('run_id', run.id);
+                return;
+              }
+            }
+            core.setFailed(
+              `No hay un artefacto compilado (o venció) para ${headSha}. ` +
+              `Re-ejecutá "Artefacto de la PR" con este número de PR y después re-ejecutá esta publicación.`);
+
+      - name: Descargar artefacto
+        uses: actions/download-artifact@v8
+        with:
+          name: artefacto-pr
+          path: artefacto
+          run-id: ${{ steps.compilacion.outputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Verificar que el artefacto corresponde a lo mergeado
+        id: verificar
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -euo pipefail
+          meta="artefacto/compilacion.json"
+          cat "$meta"
+          campo() { jq -r ".$1" "$meta"; }
+
+          tipo=bugfix
+          if jq -e 'map(ascii_downcase) | index("breaking")' <<<"$LABELS" >/dev/null; then tipo=breaking
+          elif jq -e 'map(ascii_downcase) | index("feature")' <<<"$LABELS" >/dev/null; then tipo=feature
+          fi
+
+          [ "$(campo head_sha)" = "$HEAD_SHA" ] || { echo "❌ El artefacto es de otro commit de la PR"; exit 1; }
+          [ "$(campo base_ref)" = "$BASE_REF" ] || { echo "❌ El artefacto se compiló para otra rama destino"; exit 1; }
+          [ "$(campo tipo)" = "$tipo" ] || { echo "❌ Las etiquetas de la PR cambiaron después de compilar ($(campo tipo) -> $tipo)"; exit 1; }
+          # La rama destino justo antes del merge tiene que ser la misma contra la que se
+          # compiló. El repo solo permite merge commit (lo exige el changelog de la estable).
+          base_previa=$(git rev-parse "$MERGE_SHA^1")
+          [ "$(campo base_sha)" = "$base_previa" ] || {
+            echo "❌ $BASE_REF cambió entre la compilación ($(campo base_sha)) y el merge ($base_previa)"; exit 1; }
+
+          version=$(campo version)
+          versionCode=$(campo versionCode)
+          for f in $(jq -r '.archivos[]' "$meta"); do
+            [ -f "artefacto/$f" ] || { echo "❌ Falta artefacto/$f"; exit 1; }
+          done
+          # Si el tag ya existe sobre ESTE merge con el mismo versionCode, es un re-run de
+          # una publicación que falló después de crearlo: se completa sin volver a taguear.
+          reintento=false
+          if git rev-parse -q --verify "refs/tags/$version" >/dev/null; then
+            if [ "$(git rev-parse "$version^{commit}")" = "$MERGE_SHA" ] &&
+               [ "$(git for-each-ref "refs/tags/$version" --format='%(contents:subject)')" = "versionCode=$versionCode" ]; then
+              reintento=true
+              echo "ℹ️ El tag $version ya existe sobre este merge: re-run, se completa la publicación."
+            else
+              echo "❌ El tag $version ya existe y no es de este merge (otro commit o versionCode)"; exit 1
+            fi
+          fi
+          if ! $reintento; then
+            # Y que siga siendo la versión que toca después de la última publicada.
+            actual=$(bash .github/scripts/version-actual.sh "$VERSION_INICIAL" "$VERSION_CODE_INICIAL")
+            esperada=$(bash .github/scripts/calcular-version.sh "$BASE_REF" "$tipo" \
+              "$(sed -n 's/^versionName=//p' <<<"$actual")" "$(sed -n 's/^versionCode=//p' <<<"$actual")")
+            [ "$esperada" = "version=$version"$'\n'"versionCode=$versionCode" ] || {
+              echo "❌ El artefacto es $version ($versionCode) pero ahora corresponde: $esperada"; exit 1; }
+          fi
+
+          {
+            echo "reintento=$reintento"
+            echo "destino=$BASE_REF"
+            echo "version=$version"
+            echo "versionCode=$versionCode"
+            echo "archivos<<EOF"
+            jq -r '.archivos[] | "artefacto/" + .' "$meta"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          echo "✅ Se publica $version ($versionCode) en $BASE_REF"
+
+      - name: Crear tag
+        if: steps.verificar.outputs.reintento != 'true'
+        env:
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          VERSION: ${{ steps.verificar.outputs.version }}
+          VERSION_CODE: ${{ steps.verificar.outputs.versionCode }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          # Anotado: el mensaje "versionCode=N" es lo que lee version-actual.sh.
+          git tag -a "$VERSION" -m "versionCode=$VERSION_CODE" "$MERGE_SHA"
+          git push origin "refs/tags/$VERSION"
+
+      - name: Buscar el tag anterior
+        id: anterior
+        env:
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          DESTINO: ${{ steps.verificar.outputs.destino }}
+        run: |
+          set -euo pipefail
+          # MERGE_SHA^1 es la rama destino antes del merge, así no se encuentra el tag
+          # recién creado. En main se excluyen los rc (alcanzables por los merges de dev).
+          excluir=()
+          [ "$DESTINO" = "main" ] && excluir=(--exclude '*-rc.*')
+          prev=$(git describe --tags --abbrev=0 --match '[0-9]*' "${excluir[@]}" "$MERGE_SHA^1" 2>/dev/null || true)
+          echo "Tag anterior: ${prev:-(ninguno, primera release)}"
+          echo "prev=$prev" >> "$GITHUB_OUTPUT"
+
+      - name: Generar notas de la release
+        id: notas
+        uses: actions/github-script@v9
+        env:
+          VERSION: ${{ steps.verificar.outputs.version }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          PREV: ${{ steps.anterior.outputs.prev }}
+        with:
+          script: |
+            const { VERSION, MERGE_SHA, PREV } = process.env;
+            try {
+              // Sin previous_tag_name GitHub toma todo el historial (primera release).
+              const { data } = await github.rest.repos.generateReleaseNotes({
+                ...context.repo, tag_name: VERSION, target_commitish: MERGE_SHA,
+                previous_tag_name: PREV || undefined,
+              });
+              core.setOutput('body', data.body);
+            } catch (e) {
+              // Las notas no pueden frenar la publicación.
+              core.warning(`No se pudieron generar las notas: ${e.message}`);
+              core.setOutput('body', VERSION);
+            }
+
+      - name: Crear release en GitHub
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ steps.verificar.outputs.version }}
+          name: EscorialEtiquetas${{ steps.verificar.outputs.destino == 'dev' && ' (pre-release)' || '' }} - ${{ steps.verificar.outputs.version }}
+          body: ${{ steps.notas.outputs.body }}
+          files: ${{ steps.verificar.outputs.archivos }}
+          prerelease: ${{ steps.verificar.outputs.destino == 'dev' }}
+

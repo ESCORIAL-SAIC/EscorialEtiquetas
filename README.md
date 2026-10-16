@@ -24,6 +24,16 @@ dotnet publish src/EscorialEtiquetas.App -c Release -r linux-x64 --self-containe
 
 Los tests de UI dejan capturas en `tests/EscorialEtiquetas.App.Tests/bin/Debug/net10.0/capturas/`.
 
+## Releases
+
+Todo cambio entra por PR a `dev`; `main` recibe solo PRs desde `dev`.
+
+- Cada PR corre los tests (`test`, más un check por test) y compila los binarios (`Compilar binarios`) con la versión definitiva. Los dos checks son obligatorios.
+- Al mergear se publica en Releases lo mismo que se compiló en la PR, sin recompilar: zip (win-x64), tar.gz (linux-x64), `.deb` y `.rpm` (armados con [nfpm](https://nfpm.goreleaser.com/) desde `packaging/nfpm.yaml`).
+- Linux: `sudo apt install ./escorialetiquetas_*.deb` o `sudo dnf install ./escorialetiquetas-*.rpm`. Instala en `/opt/escorialetiquetas`, el comando `escorialetiquetas` y el acceso en el menú. Paquetes sin firmar (hace falta firmarlos para armar un repositorio apt/dnf).
+- Versión: etiqueta de la PR `bugfix` (default), `feature` o `breaking`. Los merges a `dev` publican pre-releases `X.Y.Z-rc.N`; la PR `dev` → `main` publica la estable `X.Y.Z`.
+- La versión no está en el código: sale de los tags (`git tag`). Las PRs a `dev` tienen que estar al día con `dev`.
+
 ## Configuración
 
 **Credenciales:** `secrets.local.xml`, con el mismo formato que la app anterior y nunca versionado. Se busca en este orden:
@@ -32,6 +42,26 @@ Los tests de UI dejan capturas en `tests/EscorialEtiquetas.App.Tests/bin/Debug/n
 2. Junto al ejecutable. Si está en `src/EscorialEtiquetas.App/`, se copia al compilar.
 3. `~/.config/EscorialEtiquetas/` (Linux) o `%APPDATA%\EscorialEtiquetas\` (Windows).
 4. Las carpetas superiores al ejecutable.
+
+```xml
+<secrets>
+  <postgres>
+    <host>srv-postgres</host>       <!-- opcional -->
+    <database>ESCORIAL</database>   <!-- opcional, default ESCORIAL -->
+    <user>usuario</user>
+    <password>clave</password>
+  </postgres>
+  <sql>
+    <cocinas><providerConnectionString>Server=srv-sql;Database=COCINAS;User Id=usuario;Password=clave;TrustServerCertificate=True</providerConnectionString></cocinas>
+    <termos><providerConnectionString>Server=srv-sql;Database=TERMOS;User Id=usuario;Password=clave;TrustServerCertificate=True</providerConnectionString></termos>
+  </sql>
+</secrets>
+```
+
+- Un único `sql/providerConnectionString` (formato viejo) vale para las dos zonas. Con autenticación de Windows: `Integrated Security=True` en lugar de `User Id`/`Password`.
+- Es XML: en las claves, `&` se escribe `&amp;` y `<` se escribe `&lt;`.
+- Los releases no incluyen credenciales: el archivo se copia una vez por equipo en `%APPDATA%\EscorialEtiquetas\` y las actualizaciones no lo tocan. Si el equipo lo usan varios usuarios de Windows, dejarlo en `C:\ProgramData\EscorialEtiquetas\` y definir `ESCORIAL_SECRETS` como variable de sistema.
+- Las claves quedan en texto plano: restringir los permisos del archivo y usar un usuario de base con los permisos mínimos.
 
 **Preferencias:** `settings.json`, en la misma carpeta de usuario. Reemplaza a `Properties.Settings` y se edita desde la pantalla Configuración.
 
