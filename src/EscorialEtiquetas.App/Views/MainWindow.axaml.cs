@@ -15,6 +15,7 @@ public partial class MainWindow : Window
         DataContext = vm;
         Opened += async (_, _) =>
         {
+            _ = vm.VigilarActualizacionesAsync(_cts.Token); // no bloquea la carga
             await vm.InicializarAsync();
             _ = vm.VigilarNuevosRegistrosAsync(_cts.Token);
         };

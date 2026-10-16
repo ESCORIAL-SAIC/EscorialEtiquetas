@@ -55,7 +55,7 @@ public sealed class DialogService(AppServices services, Func<Window?> owner) : I
 
     public async Task AbrirConfiguracionAsync()
     {
-        var vm = new ConfigViewModel(services.Settings, services.SettingsStore, services.Secrets, services.Usuarios, this);
+        var vm = new ConfigViewModel(services.Settings, services.SettingsStore, services.Secrets, services.Usuarios, this, services.Actualizaciones);
         var w = new ConfigWindow(vm);
         await vm.InicializarAsync();
         await MostrarModal<object?>(w);
@@ -67,6 +67,13 @@ public sealed class DialogService(AppServices services, Func<Window?> owner) : I
         var w = new ImagenesWindow(vm);
         await vm.InicializarAsync();
         await MostrarModal<object?>(w);
+    }
+
+    public async Task AbrirEnlaceAsync(string url)
+    {
+        var top = owner();
+        if (top is null || !await top.Launcher.LaunchUriAsync(new Uri(url)))
+            await ErrorAsync($"No se pudo abrir el navegador. Ingresá a:\n{url}");
     }
 
     private async Task<bool> MostrarAsync(string mensaje, bool esError, bool conCancelar) =>

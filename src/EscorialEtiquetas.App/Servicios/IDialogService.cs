@@ -13,4 +13,5 @@ public interface IDialogService
     Task<string?> ElegirImagenAsync();
     Task AbrirConfiguracionAsync();
     Task AbrirImagenesAsync();
+    Task AbrirEnlaceAsync(string url);
 }

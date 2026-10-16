@@ -64,7 +64,7 @@
                   Command="{Binding ImprimirCommand}" />
           <Button Classes="primario" Content="Impresión Auto." FontSize="18" Height="50" IsEnabled="False"
                   ToolTip.Tip="Deshabilitado (requiere Arduino), igual que en la versión anterior" />
-          <Button Classes="primario" Name="BtnConfig" Content="Configuración" FontSize="18" Height="50"
+          <Button Classes="primario" Name="BtnConfig" Content="{Binding TextoConfiguracion}" FontSize="18" Height="50"
                   Command="{Binding ConfiguracionCommand}" />
         </StackPanel>
       </Grid>

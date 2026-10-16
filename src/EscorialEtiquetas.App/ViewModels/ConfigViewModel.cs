@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using EscorialEtiquetas.App.Servicios;
 using EscorialEtiquetas.Core.Configuracion;
@@ -10,13 +11,14 @@ using EscorialEtiquetas.Core.Servicios;
 namespace EscorialEtiquetas.App.ViewModels;
 
 /// <summary>Configuración (ex FrmConfig).</summary>
-public sealed partial class ConfigViewModel : ObservableObject
+public sealed partial class ConfigViewModel : ObservableObject, IDisposable
 {
     private readonly AppSettings _settings;
     private readonly ISettingsStore _store;
     private readonly LocalSecrets _secrets;
     private readonly UsuarioService _usuarios;
     private readonly IDialogService _dialogos;
+    private readonly ActualizacionService _actualizaciones;
     private readonly Func<Task<IReadOnlyList<string>>> _listarImpresoras;
 
     public ConfigViewModel(
@@ -25,6 +27,7 @@ public sealed partial class ConfigViewModel : ObservableObject
         LocalSecrets secrets,
         UsuarioService usuarios,
         IDialogService dialogos,
+        ActualizacionService actualizaciones,
         Func<Task<IReadOnlyList<string>>>? listarImpresoras = null)
     {
         _settings = settings;
@@ -32,6 +35,9 @@ public sealed partial class ConfigViewModel : ObservableObject
         _secrets = secrets;
         _usuarios = usuarios;
         _dialogos = dialogos;
+        _actualizaciones = actualizaciones;
+        // El chequeo periódico puede encontrar una versión con la ventana abierta.
+        _actualizaciones.DisponibleCambio += OnDisponibleCambio;
         _listarImpresoras = listarImpresoras ?? RawPrinter.ListarImpresorasAsync;
 
         _impresora = settings.PrinterName;
@@ -102,6 +108,23 @@ public sealed partial class ConfigViewModel : ObservableObject
     /// <summary>Una línea por mapeo: <c>\\servidor\carpeta=/mnt/carpeta</c>.</summary>
     [ObservableProperty] private string _mapeoRutas;
 
+    public string VersionActual => "Versión actual: " + _actualizaciones.VersionActual;
+    public bool HayActualizacion => _actualizaciones.Disponible is not null;
+    public string TextoActualizacion => $"Nueva versión {_actualizaciones.Disponible?.Version} disponible";
+
+    private void OnDisponibleCambio(object? sender, EventArgs e)
+    {
+        if (!Dispatcher.UIThread.CheckAccess())
+        {
+            Dispatcher.UIThread.Post(() => OnDisponibleCambio(sender, e));
+            return;
+        }
+        OnPropertyChanged(nameof(HayActualizacion));
+        OnPropertyChanged(nameof(TextoActualizacion));
+    }
+
+    public void Dispose() => _actualizaciones.DisponibleCambio -= OnDisponibleCambio;
+
     public string IpBaseDatos => "IP BD: " + _secrets.SqlHost(Tipo == "TERMOS" ? Zona.Termos : Zona.Cocinas);
 
     public async Task InicializarAsync()
@@ -144,6 +167,31 @@ public sealed partial class ConfigViewModel : ObservableObject
         else
             await _dialogos.ErrorAsync("La clave es incorrecta");
     }
+
+    [RelayCommand]
+    private async Task BuscarActualizacionesAsync()
+    {
+        if (_actualizaciones.EsDesarrollo)
+        {
+            await _dialogos.InfoAsync("Versión de desarrollo: no se buscan actualizaciones");
+            return;
+        }
+        try
+        {
+            var nueva = await _actualizaciones.BuscarAsync();
+            await _dialogos.InfoAsync(nueva is null
+                ? "Ya tenés la última versión"
+                : $"Hay una nueva versión {nueva.Version} disponible");
+        }
+        catch (Exception ex)
+        {
+            await _dialogos.ErrorAsync($"No se pudo consultar GitHub: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private Task DescargarAsync() =>
+        _actualizaciones.Disponible is { } r ? _dialogos.AbrirEnlaceAsync(r.Url) : Task.CompletedTask;
 
     [RelayCommand]
     private Task ImagenesAsync() => _dialogos.AbrirImagenesAsync();
