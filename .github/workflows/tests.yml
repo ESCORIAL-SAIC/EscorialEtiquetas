@@ -45,6 +45,8 @@ jobs:
       - name: Token de la GitHub App
         id: app-token
         if: ${{ !cancelled() && env.HAS_APP == 'true' }}
+        # Si la App no está instalada en este repo, se sigue con GITHUB_TOKEN.
+        continue-on-error: true
         uses: actions/create-github-app-token@v3
         with:
           app-id: ${{ secrets.CI_APP_ID }}
