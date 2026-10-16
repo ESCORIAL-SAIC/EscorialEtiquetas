@@ -42,6 +42,26 @@ Todo cambio entra por PR a `dev`; `main` recibe solo PRs desde `dev`.
 3. `~/.config/EscorialEtiquetas/` (Linux) o `%APPDATA%\EscorialEtiquetas\` (Windows).
 4. Las carpetas superiores al ejecutable.
 
+```xml
+<secrets>
+  <postgres>
+    <host>srv-postgres</host>       <!-- opcional -->
+    <database>ESCORIAL</database>   <!-- opcional, default ESCORIAL -->
+    <user>usuario</user>
+    <password>clave</password>
+  </postgres>
+  <sql>
+    <cocinas><providerConnectionString>Server=srv-sql;Database=COCINAS;User Id=usuario;Password=clave;TrustServerCertificate=True</providerConnectionString></cocinas>
+    <termos><providerConnectionString>Server=srv-sql;Database=TERMOS;User Id=usuario;Password=clave;TrustServerCertificate=True</providerConnectionString></termos>
+  </sql>
+</secrets>
+```
+
+- Un único `sql/providerConnectionString` (formato viejo) vale para las dos zonas. Con autenticación de Windows: `Integrated Security=True` en lugar de `User Id`/`Password`.
+- Es XML: en las claves, `&` se escribe `&amp;` y `<` se escribe `&lt;`.
+- Los releases no incluyen credenciales: el archivo se copia una vez por equipo en `%APPDATA%\EscorialEtiquetas\` y las actualizaciones no lo tocan. Si el equipo lo usan varios usuarios de Windows, dejarlo en `C:\ProgramData\EscorialEtiquetas\` y definir `ESCORIAL_SECRETS` como variable de sistema.
+- Las claves quedan en texto plano: restringir los permisos del archivo y usar un usuario de base con los permisos mínimos.
+
 **Preferencias:** `settings.json`, en la misma carpeta de usuario. Reemplaza a `Properties.Settings` y se edita desde la pantalla Configuración.
 
 ## Diferencias con la versión WinForms
