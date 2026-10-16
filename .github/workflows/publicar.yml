@@ -157,12 +157,50 @@ jobs:
           git tag -a "$VERSION" -m "versionCode=$VERSION_CODE" "$MERGE_SHA"
           git push origin "refs/tags/$VERSION"
 
+      - name: Buscar el tag anterior
+        id: anterior
+        env:
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          DESTINO: ${{ steps.verificar.outputs.destino }}
+        run: |
+          set -euo pipefail
+          # MERGE_SHA^1 es la rama destino antes del merge, así no se encuentra el tag
+          # recién creado. En main se excluyen los rc (alcanzables por los merges de dev).
+          excluir=()
+          [ "$DESTINO" = "main" ] && excluir=(--exclude '*-rc.*')
+          prev=$(git describe --tags --abbrev=0 --match '[0-9]*' "${excluir[@]}" "$MERGE_SHA^1" 2>/dev/null || true)
+          echo "Tag anterior: ${prev:-(ninguno, primera release)}"
+          echo "prev=$prev" >> "$GITHUB_OUTPUT"
+
+      - name: Generar notas de la release
+        id: notas
+        uses: actions/github-script@v9
+        env:
+          VERSION: ${{ steps.verificar.outputs.version }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          PREV: ${{ steps.anterior.outputs.prev }}
+        with:
+          script: |
+            const { VERSION, MERGE_SHA, PREV } = process.env;
+            try {
+              // Sin previous_tag_name GitHub toma todo el historial (primera release).
+              const { data } = await github.rest.repos.generateReleaseNotes({
+                ...context.repo, tag_name: VERSION, target_commitish: MERGE_SHA,
+                previous_tag_name: PREV || undefined,
+              });
+              core.setOutput('body', data.body);
+            } catch (e) {
+              // Las notas no pueden frenar la publicación.
+              core.warning(`No se pudieron generar las notas: ${e.message}`);
+              core.setOutput('body', VERSION);
+            }
+
       - name: Crear release en GitHub
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.verificar.outputs.version }}
           name: EscorialEtiquetas${{ steps.verificar.outputs.destino == 'dev' && ' (pre-release)' || '' }} - ${{ steps.verificar.outputs.version }}
-          body: ${{ steps.verificar.outputs.version }}
+          body: ${{ steps.notas.outputs.body }}
           files: ${{ steps.verificar.outputs.archivos }}
           prerelease: ${{ steps.verificar.outputs.destino == 'dev' }}
 
