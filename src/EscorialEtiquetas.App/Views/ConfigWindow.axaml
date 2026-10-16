@@ -21,6 +21,19 @@
     <ScrollViewer Grid.Row="0">
       <StackPanel Spacing="18">
 
+        <!-- Actualizaciones -->
+        <Border Background="#FFF3C4" BorderBrush="#E0B400" BorderThickness="1" CornerRadius="4" Padding="12,8"
+                IsVisible="{Binding HayActualizacion}" Name="AlertaActualizacion">
+          <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+            <TextBlock Classes="etiqueta" FontWeight="SemiBold" Text="{Binding TextoActualizacion}" />
+            <Button Grid.Column="1" Content="Descargar" Command="{Binding DescargarCommand}" />
+          </Grid>
+        </Border>
+        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+          <TextBlock Classes="etiqueta" Foreground="Gray" Text="{Binding VersionActual}" />
+          <Button Grid.Column="1" Content="Buscar actualizaciones" Command="{Binding BuscarActualizacionesCommand}" />
+        </Grid>
+
         <!-- General -->
         <Grid ColumnDefinitions="180,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto"
               RowSpacing="10" ColumnSpacing="10">

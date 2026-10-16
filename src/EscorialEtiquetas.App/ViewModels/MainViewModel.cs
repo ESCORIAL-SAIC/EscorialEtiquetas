@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
 using EscorialEtiquetas.App.Servicios;
 using EscorialEtiquetas.Core.Configuracion;
@@ -14,6 +15,7 @@ public sealed partial class MainViewModel(
     CatalogoService catalogo,
     UsuarioService usuarios,
     HabilitacionService habilitaciones,
+    ActualizacionService actualizaciones,
     IDialogService dialogos) : ObservableObject
 {
     private bool _cargandoOpciones;
@@ -39,6 +41,11 @@ public sealed partial class MainViewModel(
     /// <summary>Error de conexión u otro problema visible en la pantalla.</summary>
     [ObservableProperty] private string? _estado;
 
+    /// <summary>Marca "(!)" en el botón cuando hay una versión nueva (el detalle está en Configuración).</summary>
+    [ObservableProperty] [NotifyPropertyChangedFor(nameof(TextoConfiguracion))] private bool _hayActualizacion;
+
+    public string TextoConfiguracion => HayActualizacion ? "Configuración (!)" : "Configuración";
+
     public string TextoImpresasHoy => $"Etiquetas impresas hoy: {Conteo.Hoy}";
     public string TextoImpresasUsuario => $"Etiquetas impresas usuario: {Conteo.Usuario}";
     public string TextoImpresasAyer => $"Etiquetas impresas ayer: {Conteo.Ayer}";
@@ -54,6 +61,56 @@ public sealed partial class MainViewModel(
     {
         _ = SincronizarHabilitacionesAsync();
         await RecargarModelosAsync();
+    }
+
+    /// <summary>
+    /// Al arrancar busca una versión nueva y ofrece abrir su página; después repite cada
+    /// <paramref name="intervalo"/> (30 min por defecto) sin cartel (solo la marca "(!)" y la alerta de Configuración). Termina con <paramref name="ct"/>.
+    /// </summary>
+    public async Task VigilarActualizacionesAsync(CancellationToken ct, TimeSpan? intervalo = null)
+    {
+        actualizaciones.DisponibleCambio += OnDisponibleCambio;
+        try
+        {
+            try
+            {
+                var nueva = await actualizaciones.BuscarAsync(ct);
+                if (nueva is not null && await dialogos.ConfirmarAsync($"Hay una nueva versión {nueva.Version} disponible. ¿Abrir la página de descarga?"))
+                    await dialogos.AbrirEnlaceAsync(nueva.Url);
+            }
+            catch (Exception ex) when (!ct.IsCancellationRequested)
+            {
+                Console.Error.WriteLine($"No se pudo buscar actualizaciones: {ex.Message}");
+            }
+
+            using var timer = new PeriodicTimer(intervalo ?? TimeSpan.FromMinutes(30));
+            while (await timer.WaitForNextTickAsync(ct))
+            {
+                try
+                {
+                    await actualizaciones.BuscarAsync(ct);
+                }
+                catch (Exception) when (!ct.IsCancellationRequested)
+                {
+                    // Sin red o GitHub caído: se reintenta en el próximo tick.
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        finally
+        {
+            actualizaciones.DisponibleCambio -= OnDisponibleCambio;
+        }
+    }
+
+    private void OnDisponibleCambio(object? sender, EventArgs e)
+    {
+        if (Dispatcher.UIThread.CheckAccess())
+            HayActualizacion = actualizaciones.Disponible is not null;
+        else
+            Dispatcher.UIThread.Post(() => HayActualizacion = actualizaciones.Disponible is not null);
     }
 
     private async Task SincronizarHabilitacionesAsync()

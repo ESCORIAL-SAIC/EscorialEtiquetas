@@ -34,7 +34,7 @@ public partial class App : Application
     }
 
     private static MainWindow CrearPrincipal(AppServices s, IDialogService dialogos) =>
-        new(new MainViewModel(s.Settings, s.Etiquetas, s.Catalogo, s.Usuarios, s.Habilitaciones, dialogos));
+        new(new MainViewModel(s.Settings, s.Etiquetas, s.Catalogo, s.Usuarios, s.Habilitaciones, s.Actualizaciones, dialogos));
 
     private static Window CrearLogin(IClassicDesktopStyleApplicationLifetime desktop, AppServices s, IDialogService dialogos)
     {

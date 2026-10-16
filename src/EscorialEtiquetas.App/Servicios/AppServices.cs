@@ -2,6 +2,7 @@ using EscorialEtiquetas.Core.Configuracion;
 using EscorialEtiquetas.Core.Datos;
 using EscorialEtiquetas.Core.Impresion;
 using EscorialEtiquetas.Core.Servicios;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 
 namespace EscorialEtiquetas.App.Servicios;
@@ -16,6 +17,7 @@ public sealed class AppServices
     public required CatalogoService Catalogo { get; init; }
     public required UsuarioService Usuarios { get; init; }
     public required HabilitacionService Habilitaciones { get; init; }
+    public required ActualizacionService Actualizaciones { get; init; }
 
     public static AppServices Crear()
     {
@@ -41,6 +43,12 @@ public sealed class AppServices
                 db,
                 new PostgresHabilitacionOrigen(() => secrets.PostgresConnectionString(settings.IpPublica)),
                 reloj),
+            Actualizaciones = new ActualizacionService(new HttpClient { Timeout = TimeSpan.FromSeconds(10) }, VersionActual()),
         };
     }
+
+    /// <summary>Versión con la que compiló el CI (-p:Version), sin el sufijo "+commit".</summary>
+    private static string VersionActual() =>
+        Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+            .Split('+')[0] ?? "0.0.0-dev";
 }

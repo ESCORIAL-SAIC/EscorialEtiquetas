@@ -30,11 +30,14 @@ public sealed class FakeDialogos : IDialogService
 
     public Task InfoAsync(string mensaje) { Infos.Add(mensaje); return Task.CompletedTask; }
     public Task ErrorAsync(string mensaje) { Errores.Add(mensaje); return Task.CompletedTask; }
-    public Task<bool> ConfirmarAsync(string mensaje) => Task.FromResult(RespuestaConfirmar);
+    public List<string> Confirmaciones { get; } = [];
+    public Task<bool> ConfirmarAsync(string mensaje) { Confirmaciones.Add(mensaje); return Task.FromResult(RespuestaConfirmar); }
     public Task<string?> PedirClaveAsync(string mensaje) => Task.FromResult(RespuestaClave);
     public Task<string?> ElegirImagenAsync() => Task.FromResult<string?>(null);
     public Task AbrirConfiguracionAsync() { ConfiguracionAbierta++; return Task.CompletedTask; }
     public Task AbrirImagenesAsync() => Task.CompletedTask;
+    public List<string> EnlacesAbiertos { get; } = [];
+    public Task AbrirEnlaceAsync(string url) { EnlacesAbiertos.Add(url); return Task.CompletedTask; }
 }
 
 public sealed class FakeSettingsStore : ISettingsStore
@@ -74,6 +77,8 @@ public sealed class Escenario : IDisposable
     public EtiquetaService Etiquetas => new(Db, Settings, Printer, new FakePlantillas("^XA^FD#NUM#^FS^XZ"), TimeProvider.System);
     public UsuarioService Usuarios => new(Db);
     public CatalogoService Catalogo => new(Db, Settings);
+    /// <summary>Versión "-dev": no sale a la red.</summary>
+    public ActualizacionService Actualizaciones { get; } = new(new HttpClient(), "0.0.0-dev");
 
     private sealed class SinOrigen : IHabilitacionOrigen
     {
@@ -81,11 +86,11 @@ public sealed class Escenario : IDisposable
             Task.FromResult<IReadOnlyList<EstadoHabilitacion>>([]);
     }
 
-    public MainViewModel Main() =>
-        new(Settings, Etiquetas, Catalogo, Usuarios, new HabilitacionService(Db, new SinOrigen(), TimeProvider.System), Dialogos);
+    public MainViewModel Main(ActualizacionService? actualizaciones = null) =>
+        new(Settings, Etiquetas, Catalogo, Usuarios, new HabilitacionService(Db, new SinOrigen(), TimeProvider.System), actualizaciones ?? Actualizaciones, Dialogos);
 
-    public ConfigViewModel Config() =>
-        new(Settings, Store, Secrets, Usuarios, Dialogos, () => Task.FromResult<IReadOnlyList<string>>(["Zebra_L1", "Zebra_L2"]));
+    public ConfigViewModel Config(ActualizacionService? actualizaciones = null) =>
+        new(Settings, Store, Secrets, Usuarios, Dialogos, actualizaciones ?? Actualizaciones, () => Task.FromResult<IReadOnlyList<string>>(["Zebra_L1", "Zebra_L2"]));
 
     public void Dispose() => Db.Dispose();
 }
