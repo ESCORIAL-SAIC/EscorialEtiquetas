@@ -29,7 +29,8 @@ Los tests de UI dejan capturas en `tests/EscorialEtiquetas.App.Tests/bin/Debug/n
 Todo cambio entra por PR a `dev`; `main` recibe solo PRs desde `dev`.
 
 - Cada PR corre los tests (`test`, más un check por test) y compila los binarios (`Compilar binarios`) con la versión definitiva. Los dos checks son obligatorios.
-- Al mergear se publica en Releases el mismo zip (win-x64) y tar.gz (linux-x64) compilados en la PR, sin recompilar.
+- Al mergear se publica en Releases lo mismo que se compiló en la PR, sin recompilar: zip (win-x64), tar.gz (linux-x64), `.deb` y `.rpm` (armados con [nfpm](https://nfpm.goreleaser.com/) desde `packaging/nfpm.yaml`).
+- Linux: `sudo apt install ./escorialetiquetas_*.deb` o `sudo dnf install ./escorialetiquetas-*.rpm`. Instala en `/opt/escorialetiquetas`, el comando `escorialetiquetas` y el acceso en el menú. Paquetes sin firmar (hace falta firmarlos para armar un repositorio apt/dnf).
 - Versión: etiqueta de la PR `bugfix` (default), `feature` o `breaking`. Los merges a `dev` publican pre-releases `X.Y.Z-rc.N`; la PR `dev` → `main` publica la estable `X.Y.Z`.
 - La versión no está en el código: sale de los tags (`git tag`). Las PRs a `dev` tienen que estar al día con `dev`.
 

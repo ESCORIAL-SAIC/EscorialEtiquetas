@@ -172,6 +172,24 @@ jobs:
           (cd publish/win-x64 && zip -qr "$GITHUB_WORKSPACE/artefacto/EscorialEtiquetas-$version-win-x64.zip" .)
           tar -czf "artefacto/EscorialEtiquetas-$version-linux-x64.tar.gz" -C publish/linux-x64 .
 
+      - name: Paquetes .deb y .rpm
+        if: steps.pr.outputs.aplica == 'true'
+        shell: bash
+        env:
+          NFPM: "2.48.0"
+        run: |
+          set -euo pipefail
+          url="https://github.com/goreleaser/nfpm/releases/download/v$NFPM"
+          curl -fsSL -o "$RUNNER_TEMP/nfpm.tgz" "$url/nfpm_${NFPM}_Linux_x86_64.tar.gz"
+          curl -fsSL "$url/checksums.txt" | grep " nfpm_${NFPM}_Linux_x86_64.tar.gz$" \
+            | sed "s| nfpm_.*| $RUNNER_TEMP/nfpm.tgz|" | sha256sum -c
+          tar -xzf "$RUNNER_TEMP/nfpm.tgz" -C "$RUNNER_TEMP" nfpm
+          # El mismo publish/linux-x64 que el tar.gz. nfpm pasa X.Y.Z-rc.N a X.Y.Z~rc.N.
+          for p in deb rpm; do
+            VERSION="$version" "$RUNNER_TEMP/nfpm" package -f packaging/nfpm.yaml -p "$p" -t artefacto/
+          done
+          ls -la artefacto/
+
       - name: Datos de la compilación
         if: steps.pr.outputs.aplica == 'true'
         shell: bash

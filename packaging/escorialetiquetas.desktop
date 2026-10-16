@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Escorial Etiquetas
+Comment=Impresión de etiquetas de producción
+Exec=escorialetiquetas
+Icon=escorialetiquetas
+Terminal=false
+Categories=Office;
