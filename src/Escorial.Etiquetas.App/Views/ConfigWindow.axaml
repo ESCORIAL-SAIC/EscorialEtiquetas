@@ -57,6 +57,9 @@
             <Button Content="Desbloquear (clave de administrador)" Command="{Binding AvanzadasCommand}"
                     IsVisible="{Binding !AvanzadasHabilitadas}" />
 
+            <CheckBox Content="Usar login (se aplica al reiniciar la aplicación)" Name="ChkUsaLogin"
+                      IsChecked="{Binding UsaLogin}" IsEnabled="{Binding AvanzadasHabilitadas}" />
+
             <Grid ColumnDefinitions="180,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto"
                   RowSpacing="10" ColumnSpacing="10" IsEnabled="{Binding AvanzadasHabilitadas}">
               <TextBlock Grid.Row="0" Classes="etiqueta" Text="Variable fecha" />

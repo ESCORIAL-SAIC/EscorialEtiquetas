@@ -43,6 +43,7 @@ public sealed partial class ConfigViewModel : ObservableObject
         _usuarioManual = settings.UserManual;
         _passwordManual = settings.PasswordManual;
 
+        _usaLogin = settings.UsaLogin;
         _arduinoPort = settings.ArduinoPort;
         _arduinoBaudRate = settings.ArduinoBaudRate;
         _medirDistancia = settings.MedirDistancia;
@@ -80,6 +81,8 @@ public sealed partial class ConfigViewModel : ObservableObject
     [ObservableProperty] private string _passwordManual;
 
     [ObservableProperty] private bool _avanzadasHabilitadas;
+    /// <summary>Se aplica al reiniciar la app: decide si arranca en la pantalla de login.</summary>
+    [ObservableProperty] private bool _usaLogin;
     [ObservableProperty] private string _arduinoPort;
     [ObservableProperty] private int _arduinoBaudRate;
     [ObservableProperty] private string _medirDistancia;
@@ -172,6 +175,7 @@ public sealed partial class ConfigViewModel : ObservableObject
 
         if (AvanzadasHabilitadas)
         {
+            _settings.UsaLogin = UsaLogin;
             _settings.ArduinoPort = ArduinoPort;
             _settings.ArduinoBaudRate = ArduinoBaudRate;
             _settings.MedirDistancia = MedirDistancia;

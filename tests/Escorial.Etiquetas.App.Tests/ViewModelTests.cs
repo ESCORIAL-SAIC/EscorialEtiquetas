@@ -217,6 +217,22 @@ public sealed class ConfigViewModelTests : IDisposable
         Assert.Equal("#SERIE#", _e.Settings.VarSerie);
         Assert.Equal("/mnt/etq", Assert.Single(_e.Settings.MapeoRutas).Value);
     }
+
+    [Fact]
+    public async Task Usar_login_se_guarda_solo_con_avanzadas_desbloqueadas()
+    {
+        var vm = _e.Config();
+        Assert.False(vm.UsaLogin);
+
+        vm.UsaLogin = true;
+        await vm.GuardarCommand.ExecuteAsync(null);
+        Assert.False(_e.Settings.UsaLogin);
+
+        _e.Dialogos.RespuestaClave = "admin";
+        await vm.AvanzadasCommand.ExecuteAsync(null);
+        await vm.GuardarCommand.ExecuteAsync(null);
+        Assert.True(_e.Settings.UsaLogin);
+    }
 }
 
 public sealed class LoginViewModelTests : IDisposable
