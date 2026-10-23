@@ -62,6 +62,44 @@ public sealed class UiTests : IDisposable
         GuardarCaptura(w, "config-window.png");
     }
 
+    [AvaloniaFact]
+    public async Task Cambiar_tipo_en_la_ventana_selecciona_la_primera_linea_del_tipo()
+    {
+        var vm = _e.Config();
+        await vm.InicializarAsync();
+        var w = new ConfigWindow(vm);
+        w.Show();
+        Dispatcher.UIThread.RunJobs();
+        var combos = w.GetVisualDescendants().OfType<ComboBox>().ToList();
+
+        combos[0].SelectedItem = "TERMOS";
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("LAGA", vm.Linea);
+        Assert.Equal(4, combos[1].ItemCount);
+        Assert.Equal("LAGA", combos[1].SelectedItem);
+    }
+
+    [AvaloniaFact]
+    public async Task Cambiar_de_termos_a_cocinas_en_la_ventana_selecciona_L1()
+    {
+        var vm = _e.Config();
+        await vm.InicializarAsync();
+        var w = new ConfigWindow(vm);
+        w.Show();
+        Dispatcher.UIThread.RunJobs();
+        var combos = w.GetVisualDescendants().OfType<ComboBox>().ToList();
+
+        combos[0].SelectedItem = "TERMOS";
+        Dispatcher.UIThread.RunJobs();
+        combos[0].SelectedItem = "COCINAS";
+        Dispatcher.UIThread.RunJobs();
+
+        Assert.Equal("L1", vm.Linea);
+        Assert.Equal(3, combos[1].ItemCount);
+        Assert.Equal("L1", combos[1].SelectedItem);
+    }
+
     /// <summary>Deja una captura en bin/.../capturas para revisar la UI sin abrir la app.</summary>
     private static void GuardarCaptura(Window w, string nombre)
     {

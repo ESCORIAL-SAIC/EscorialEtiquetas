@@ -159,6 +159,55 @@ public sealed class ConfigViewModelTests : IDisposable
 
         vm.Tipo = "TERMOS";
         Assert.Equal("IP BD: sql-termos", vm.IpBaseDatos);
+        Assert.Equal(["LAGA", "LAEL", "LAGE", "LACA"], vm.Lineas);
+        Assert.Equal("LAGA", vm.Linea);
+    }
+
+    [Fact]
+    public void Cocinas_ofrece_L1_L2_L3()
+    {
+        var vm = _e.Config();
+
+        Assert.Equal(["L1", "L2", "L3"], vm.Lineas);
+    }
+
+    [Fact]
+    public void Volver_a_cocinas_corrige_linea_a_la_primera()
+    {
+        var vm = _e.Config();
+        vm.Tipo = "TERMOS";
+        vm.Linea = "LACA";
+
+        vm.Tipo = "COCINAS";
+
+        Assert.Equal(["L1", "L2", "L3"], vm.Lineas);
+        Assert.Equal("L1", vm.Linea);
+    }
+
+    [Fact]
+    public void Al_abrir_carga_la_linea_guardada_sin_corregir()
+    {
+        _e.Settings.Tipo = "TERMOS";
+        _e.Settings.LineaProduccion = "LAGE";
+
+        var vm = _e.Config();
+
+        Assert.Equal("LAGE", vm.Linea);
+    }
+
+    [Theory]
+    [InlineData("COCINAS", "LAGA", "L1")] // línea de otro tipo
+    [InlineData("TERMOS", "L2", "LAGA")]
+    [InlineData("COCINAS", "XX", "L1")]
+    [InlineData("TERMOS", null, "LAGA")]
+    public void Al_abrir_con_linea_guardada_invalida_para_el_tipo_usa_la_primera(string tipo, string? guardada, string esperada)
+    {
+        _e.Settings.Tipo = tipo;
+        _e.Settings.LineaProduccion = guardada!;
+
+        var vm = _e.Config();
+
+        Assert.Equal(esperada, vm.Linea);
     }
 
     [Fact]

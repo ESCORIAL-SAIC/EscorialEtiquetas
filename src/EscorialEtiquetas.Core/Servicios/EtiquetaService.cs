@@ -27,7 +27,6 @@ public sealed class EtiquetaService(
     TimeProvider reloj)
 {
     public const string FormatoFecha = "dd/MM/yyyy-HH:mm:ss";
-    private static readonly string[] LineasValidas = ["L1", "L2", "L3"];
 
     /// <summary>Antepone la línea de producción ("L2-usuario") al usuario que se guarda en la base.</summary>
     public static string UsuarioConLinea(string baseUser, string? linea)
@@ -36,7 +35,7 @@ public sealed class EtiquetaService(
             return baseUser;
 
         var l = (linea ?? "").Trim().ToUpperInvariant();
-        if (!LineasValidas.Contains(l))
+        if (!LineasProduccion.EsValida(l))
             return baseUser;
 
         var prefijo = l + "-";
