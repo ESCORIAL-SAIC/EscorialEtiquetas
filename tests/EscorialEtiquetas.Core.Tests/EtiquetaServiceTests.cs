@@ -43,6 +43,8 @@ public sealed class EtiquetaServiceTests : IDisposable
     [InlineData("jperez", " l3 ", "L3-jperez")]
     [InlineData("L2-jperez", "L2", "L2-jperez")]
     [InlineData("jperez", "L9", "jperez")]
+    [InlineData("jperez", "LAGA", "LAGA-jperez")]
+    [InlineData("jperez", "LAXX", "jperez")]
     [InlineData("jperez", null, "jperez")]
     [InlineData("", "L1", "")]
     public void UsuarioConLinea(string usuario, string? linea, string esperado) =>

@@ -43,7 +43,7 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
         _impresora = settings.PrinterName;
         _tipo = settings.Zona == Zona.Termos ? "TERMOS" : "COCINAS";
         var linea = (settings.LineaProduccion ?? "").Trim().ToUpperInvariant();
-        _linea = Lineas.Contains(linea) ? linea : "L1";
+        _linea = Lineas.Contains(linea) ? linea : Lineas[0];
         _testing = settings.Testing;
         _imprimeAdvertencia = settings.ImprimeAdvertenciaCambioModelo;
         _usuarioManual = settings.UserManual;
@@ -70,7 +70,7 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
 
     public string Titulo => _settings.Caption;
     public IReadOnlyList<string> Tipos { get; } = ["COCINAS", "TERMOS"];
-    public IReadOnlyList<string> Lineas { get; } = ["L1", "L2", "L3"];
+    public IReadOnlyList<string> Lineas => LineasProduccion.Para(Tipo == "TERMOS" ? Zona.Termos : Zona.Cocinas);
     public ObservableCollection<string> Impresoras { get; } = [];
     public ObservableCollection<string> Usuarios { get; } = [];
     public ObservableCollection<string> PuertosSerie { get; } = [];
@@ -81,6 +81,14 @@ public sealed partial class ConfigViewModel : ObservableObject, IDisposable
     [ObservableProperty] private string _impresora;
     [ObservableProperty] [NotifyPropertyChangedFor(nameof(IpBaseDatos))] private string _tipo;
     [ObservableProperty] private string _linea;
+
+    partial void OnTipoChanged(string value)
+    {
+        // Antes de corregir Linea: el ComboBox necesita la lista nueva o empuja null al binding.
+        OnPropertyChanged(nameof(Lineas));
+        if (!Lineas.Contains(Linea))
+            Linea = Lineas[0];
+    }
     [ObservableProperty] private bool _testing;
     [ObservableProperty] private bool _imprimeAdvertencia;
     [ObservableProperty] private string? _usuarioManual;
